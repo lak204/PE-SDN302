@@ -1,0 +1,234 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { Post } from '@/types'
+import PostCard from '@/components/PostCard'
+import SearchBar from '@/components/SearchBar'
+import SortButtons from '@/components/SortButtons'
+import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
+import DeleteConfirmModal from '@/components/ui/DeleteConfirmModal'
+import Toast from '@/components/ui/Toast'
+import { Plus } from 'lucide-react'
+import Link from 'next/link'
+
+export default function HomePage() {
+  const [posts, setPosts] = useState<Post[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+  const [deleteModal, setDeleteModal] = useState<{
+    isOpen: boolean
+    postId: string
+    postName: string
+  }>({
+    isOpen: false,
+    postId: '',
+    postName: ''
+  })
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [toast, setToast] = useState<{
+    show: boolean
+    message: string
+    type: 'success' | 'error'
+  }>({
+    show: false,
+    message: '',
+    type: 'success'
+  })
+
+  const fetchPosts = async () => {
+    try {
+      setLoading(true)
+      const params = new URLSearchParams({
+        search: searchQuery,
+        sort: sortOrder
+      })
+      
+      const response = await fetch(`/api/posts?${params}`)
+      const data = await response.json()
+      
+      if (response.ok) {
+        console.log('Fetched posts:', data.posts);
+        setPosts(data.posts)
+      } else {
+        showToast('Unable to load posts list', 'error')
+      }
+    } catch (error) {
+      console.error('Error fetching posts:', error)
+      showToast('An error occurred while loading data', 'error')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleDelete = async (postId: string) => {
+    console.log('handleDelete called with postId:', postId);
+    if (!postId) {
+      console.error('No post ID provided to handleDelete');
+      showToast('Error: No post ID provided', 'error');
+      return;
+    }
+    
+    try {
+      // Note: we set isDeleting before calling the API
+      setIsDeleting(true);
+      console.log('🔴 CALLING DELETE API for post ID:', postId);
+      
+      // Log the URL for debugging
+      const url = `/api/posts/${postId}`;
+      console.log('DELETE request URL:', url);
+      
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const data = await response.json();
+      console.log('Delete API response:', data);
+      
+      if (response.ok) {
+        console.log('Posts before filter:', posts.length);
+        
+        // Immediately close the modal when deletion is successful
+        setDeleteModal({ isOpen: false, postId: '', postName: '' });
+        
+        // Use functional update to ensure we're working with the latest state
+        setPosts(prevPosts => {
+          const updatedPosts = prevPosts.filter(post => post.id !== postId);
+          console.log('Posts after filter:', updatedPosts.length);
+          return updatedPosts;
+        });
+        
+        showToast('Post deleted successfully', 'success');
+      } else {
+        console.error('Error response:', response.status, data);
+        showToast(`Unable to delete post: ${data.error || 'Unknown error'}`, 'error');
+      }
+    } catch (error) {
+      console.error('Error deleting post:', error)
+      showToast('An error occurred while deleting post', 'error')
+    } finally {
+      // Reset the loading state
+      setIsDeleting(false);
+      // Ensure the modal is closed
+      setDeleteModal({ isOpen: false, postId: '', postName: '' });
+    }
+  }
+
+  const showToast = (message: string, type: 'success' | 'error') => {
+    setToast({ show: true, message, type })
+  }
+
+  const openDeleteModal = (postId: string, postName: string) => {
+    console.log('Opening delete modal for post:', postId, postName);
+    // Make sure we're storing the correct postId and postName
+    setDeleteModal({ 
+      isOpen: true, 
+      postId: postId, 
+      postName: postName 
+    });
+  }
+
+  const closeDeleteModal = () => {
+    console.log('Closing delete modal');
+    setDeleteModal({ isOpen: false, postId: '', postName: '' });
+  }
+
+  useEffect(() => {
+    fetchPosts()
+  }, [searchQuery, sortOrder])
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Posts List</h1>
+          <p className="text-gray-600 mt-1">
+            Manage and organize all your posts
+          </p>
+        </div>
+        
+        <Link
+          href="/create"
+          className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 shadow-md hover:shadow-lg"
+        >
+          <Plus className="w-5 h-5 mr-2" />
+          Create New Post
+        </Link>
+      </div>
+
+      {/* Search and Sort */}
+      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+        <div className="w-full sm:w-96">
+          <SearchBar onSearch={setSearchQuery} />
+        </div>
+        
+        <SortButtons currentSort={sortOrder} onSort={setSortOrder} />
+      </div>
+
+      {/* Posts Grid */}
+      {loading ? (
+        <LoadingSkeleton />
+      ) : posts.length === 0 ? (
+        <div className="text-center py-12">
+          <div className="text-gray-500 text-lg mb-4">
+            {searchQuery ? 'No posts found' : 'No posts yet'}
+          </div>
+          {!searchQuery && (
+            <Link
+              href="/create"
+              className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+            >
+              <Plus className="w-5 h-5 mr-2" />
+              Create First Post
+            </Link>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {posts.map((post) => (
+            <PostCard
+              key={post.id}
+              post={post}
+              onDelete={(id) => {
+                console.log('Delete requested from PostCard for:', id);
+                openDeleteModal(id, post.name);
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmModal
+        isOpen={deleteModal.isOpen}
+        onClose={closeDeleteModal}
+        onConfirm={() => {
+          console.log('onConfirm handler called with postId:', deleteModal.postId);
+          // Alert for debugging
+          alert(`Attempting to delete post: ${deleteModal.postId}`);
+          if (deleteModal.postId) {
+            // Call handleDelete with the post ID
+            handleDelete(deleteModal.postId);
+          } else {
+            console.error('No postId in deleteModal state');
+            closeDeleteModal();
+          }
+        }}
+        postName={deleteModal.postName}
+        isDeleting={isDeleting}
+      />
+
+      {/* Toast Notifications */}
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.show}
+        onClose={() => setToast({ ...toast, show: false })}
+      />
+    </div>
+  )
+}
