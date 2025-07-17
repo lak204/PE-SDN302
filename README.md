@@ -1,60 +1,61 @@
-# Next.js Post Management App
+# Post Management Application
 
-A modern, full-featured post management application built with Next.js 14+ (App Router), TypeScript, Prisma ORM, MongoDB, and Tailwind CSS.
+A modern web application for managing posts built with Next.js, Prisma, and MongoDB. This application allows users to create, read, update, and delete posts with search and sorting functionality.
 
 ## Features
 
-- ✅ **Full CRUD operations** for posts (Create, Read, Update, Delete)
-- 🔍 **Real-time search** by post name and description
-- 📊 **Sorting** posts A-Z / Z-A
-- 🖼️ **Image support** - URL input or file upload
-- 📱 **Responsive design** - works on mobile, tablet, and desktop
-- 🎨 **Beautiful UI** with Tailwind CSS
-- ⚡ **Fast performance** with Next.js 14 App Router
-- 🔒 **Form validation** with Zod
-- 🌐 **MongoDB** database with Prisma ORM
-- 🎯 **TypeScript** for type safety
+- **Post Management**: Create, edit, and delete posts
+- **Search**: Search posts by name
+- **Sorting**: Sort posts alphabetically (A-Z/Z-A) or by creation date
+- **Image Support**: Upload images from device or use image URLs
+- **Responsive Design**: Works on desktop and mobile devices
+- **Real-time Updates**: Instant updates when posts are modified
 
 ## Tech Stack
 
-- **Framework**: Next.js 14+ (App Router)
-- **Language**: TypeScript
+- **Frontend**: Next.js 15, React 19, TypeScript
+- **Backend**: Next.js API Routes
 - **Database**: MongoDB with Prisma ORM
 - **Styling**: Tailwind CSS
-- **Form Handling**: React Hook Form + Zod validation
 - **Icons**: Lucide React
-- **HTTP Client**: Fetch API
 
 ## Getting Started
 
 ### Prerequisites
-- Node.js 18+ 
-- MongoDB database (local or cloud)
+
+- Node.js 18+
+- MongoDB database (MongoDB Atlas recommended)
 
 ### Installation
 
-1. Clone the repository and install dependencies:
+1. Clone the repository:
+
+```bash
+git clone <repository-url>
+cd post-application
+```
+
+2. Install dependencies:
+
 ```bash
 npm install
 ```
 
-2. Set up environment variables:
-```bash
-cp .env.example .env
+3. Set up environment variables:
+   Create a `.env` file in the root directory with:
+
+```
+DATABASE_URL="mongodb+srv://kle2042004:kle2042004@test.wmit5ey.mongodb.net/TEST?retryWrites=true&w=majority"
 ```
 
-3. Update the `.env` file with your MongoDB connection string:
-```bash
-DATABASE_URL="your-mongodb-connection-string"
-```
+4. Generate Prisma client:
 
-4. Generate Prisma client and push database schema:
 ```bash
 npx prisma generate
-npx prisma db push
 ```
 
-5. Start the development server:
+5. Run the development server:
+
 ```bash
 npm run dev
 ```
@@ -66,74 +67,27 @@ npm run dev
 ```
 src/
 ├── app/
-│   ├── layout.tsx          # Root layout with navigation
-│   ├── page.tsx            # Home page - posts list
-│   ├── create/
-│   │   └── page.tsx        # Create new post
-│   ├── edit/
-│   │   └── [id]/
-│   │       └── page.tsx    # Edit existing post
-│   └── api/
-│       └── posts/
-│           ├── route.ts    # GET all posts, POST create
-│           └── [id]/
-│               └── route.ts # GET, PUT, DELETE by ID
+│   ├── api/posts/          # API routes for posts
+│   ├── globals.css         # Global styles
+│   ├── layout.tsx          # Root layout
+│   └── page.tsx            # Main page component
 ├── components/
-│   ├── PostCard.tsx        # Individual post card
-│   ├── PostForm.tsx        # Create/Edit post form
-│   ├── SearchBar.tsx       # Search functionality
-│   ├── SortButtons.tsx     # Sort A-Z / Z-A buttons
-│   └── ui/                 # UI components
-│       ├── DeleteConfirmModal.tsx
-│       ├── Toast.tsx
-│       └── LoadingSkeleton.tsx
+│   ├── PostCard.tsx        # Individual post card component
+│   └── PostForm.tsx        # Form for creating/editing posts
 ├── lib/
-│   ├── prisma.ts           # Prisma client setup
-│   └── utils.ts            # Utility functions
+│   └── prisma.ts           # Prisma client configuration
 └── types/
-    └── index.ts            # TypeScript types
+    └── post.ts             # TypeScript type definitions
 ```
 
 ## API Endpoints
 
-- `GET /api/posts` - Get all posts with optional search & sort
+- `GET /api/posts` - Get all posts (with optional search and sort)
 - `POST /api/posts` - Create a new post
 - `GET /api/posts/[id]` - Get a specific post
 - `PUT /api/posts/[id]` - Update a post
 - `DELETE /api/posts/[id]` - Delete a post
-
-## Features in Detail
-
-### 🔍 Search & Sort
-- Real-time search across post names and descriptions
-- Sort posts alphabetically (A-Z / Z-A)
-- Debounced search input for better performance
-
-### 🖼️ Image Support
-- **URL Input**: Paste image URLs directly
-- **File Upload**: Upload images from your device
-- **Image Preview**: See images before saving
-- **Validation**: File type and size validation
-
-### 📱 Responsive Design
-- Mobile-first approach
-- Optimized for all screen sizes
-- Touch-friendly interface
-
-### 🎨 UI/UX Features
-- Loading skeletons while fetching data
-- Smooth animations and transitions
-- Toast notifications for user feedback
-- Confirmation modals for destructive actions
-- Form validation with helpful error messages
-
-## Environment Variables
-
-Create a `.env` file in the root directory:
-
-```bash
-DATABASE_URL="mongodb+srv://username:password@cluster.mongodb.net/database?retryWrites=true&w=majority"
-```
+- `POST /api/upload` - Upload image file (returns image URL)
 
 ## Database Schema
 
@@ -142,52 +96,32 @@ model Post {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   name        String
   description String
-  imageUrl    String?
+  image       String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-
   @@map("posts")
 }
 ```
 
-## Available Scripts
-
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run start` - Start production server
-- `npm run lint` - Run ESLint
-- `npx prisma generate` - Generate Prisma client
-- `npx prisma db push` - Push schema to database
-- `npx prisma studio` - Open Prisma Studio
-
 ## Deployment
 
-### Vercel (Recommended)
+This application can be deployed on platforms like Vercel, Netlify, or any Node.js hosting service.
+
+For Vercel deployment:
+
 1. Push your code to GitHub
 2. Connect your repository to Vercel
-3. Add your `DATABASE_URL` environment variable
-4. Deploy!
-
-### Other Platforms
-This app can be deployed on any platform that supports Next.js:
-- Netlify
-- Railway
-- Render
-- DigitalOcean App Platform
+3. Add your environment variables in Vercel dashboard
+4. Deploy
 
 ## Contributing
 
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
 
 ## License
 
-This project is licensed under the MIT License.
-
-## Support
-
-If you have any questions or need help, please open an issue on GitHub.
-# PE-SDN302
+This project is for educational purposes.

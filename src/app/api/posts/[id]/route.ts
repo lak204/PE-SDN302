@@ -1,102 +1,84 @@
-import { prisma } from '@/lib/prisma'
-import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
-const PostSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(100, 'Name is too long'),
-  description: z.string().min(1, 'Description is required').max(1000, 'Description is too long'),
-  imageUrl: z.string().url('Invalid URL').optional().or(z.literal(''))
-})
-
-export async function GET(request: NextRequest) {
+// GET /api/posts/[id] - Get a single post by ID
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const id = request.nextUrl.pathname.split('/').pop() || '';
+    const { id } = await params;
     const post = await prisma.post.findUnique({
-      where: { id }
-    })
+      where: { id },
+    });
+
     if (!post) {
-      return NextResponse.json({ error: 'Post not found' }, { status: 404 })
+      return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
-    return NextResponse.json({ post })
+
+    return NextResponse.json(post);
   } catch (error) {
-    console.error('Error fetching post:', error)
-    return NextResponse.json({ error: 'Failed to fetch post' }, { status: 500 })
+    console.error("Error fetching post:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch post" },
+      { status: 500 }
+    );
   }
 }
 
-export async function PUT(request: NextRequest) {
+// PUT /api/posts/[id] - Update a post
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const id = request.nextUrl.pathname.split('/').pop() || '';
+    const { id } = await params;
     const body = await request.json();
-    const validatedData = PostSchema.parse(body);
+    const { name, description, image } = body;
+
+    if (!name || !description) {
+      return NextResponse.json(
+        { error: "Name and description are required" },
+        { status: 400 }
+      );
+    }
+
     const post = await prisma.post.update({
       where: { id },
       data: {
-        name: validatedData.name,
-        description: validatedData.description,
-        imageUrl: validatedData.imageUrl || null
-      }
+        name,
+        description,
+        image: image || null,
+      },
     });
-    return NextResponse.json({ success: true, post });
+
+    return NextResponse.json(post);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Validation error', 
-        details: error.errors 
-      }, { status: 400 });
-    }
-    console.error('Error updating post:', error);
-    return NextResponse.json({ 
-      success: false, 
-      error: 'Failed to update post' 
-    }, { status: 500 });
+    console.error("Error updating post:", error);
+    return NextResponse.json(
+      { error: "Failed to update post" },
+      { status: 500 }
+    );
   }
 }
 
-export async function DELETE(request: NextRequest) {
+// DELETE /api/posts/[id] - Delete a post
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const id = request.nextUrl.pathname.split('/').pop() || '';
-    console.log('API: Deleting post with id:', id);
-    
-    if (!id) {
-      console.error('API: No ID provided in delete request');
-      return NextResponse.json({ success: false, error: 'No ID provided' }, { status: 400 });
-    }
-    
-    try {
-      // Check if the post exists first
-      const post = await prisma.post.findUnique({
-        where: { id }
-      });
-      
-      if (!post) {
-        console.log('API: Post not found with id:', id);
-        return NextResponse.json({ success: false, error: 'Post not found' }, { status: 404 });
-      }
-      
-      console.log('API: Found post to delete:', post);
-      
-      // Then delete it
-      const deletedPost = await prisma.post.delete({
-        where: { id }
-      });
-      
-      console.log('API: Successfully deleted post:', deletedPost);
-      return NextResponse.json({ success: true, message: 'Post deleted successfully' });
-    } catch (dbError: any) {
-      console.error('Database error when deleting post:', dbError);
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Database error when deleting post',
-        details: dbError?.message || 'Unknown database error'
-      }, { status: 500 });
-    }
+    const { id } = await params;
+    await prisma.post.delete({
+      where: { id },
+    });
+
+    return NextResponse.json({ message: "Post deleted successfully" });
   } catch (error) {
-    console.error('Error deleting post:', error);
-    return NextResponse.json({ 
-      success: false, 
-      error: 'Failed to delete post' 
-    }, { status: 500 });
+    console.error("Error deleting post:", error);
+    return NextResponse.json(
+      { error: "Failed to delete post" },
+      { status: 500 }
+    );
   }
 }
